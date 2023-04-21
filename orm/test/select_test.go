@@ -38,6 +38,36 @@ func TestSelector(t *testing.T) {
 				Sql: "SELECT * FROM user_model;",
 			},
 		},
+		{
+			name:    "where eq and not",
+			builder: (&orm.Selector[UserModel]{}).Where(orm.C("name").Eq("lb"), orm.Not(orm.C("age").Eq(12))),
+			wantquery: &orm.Query{
+				Sql: "SELECT * FROM `UserModel` WHERE (`name` = ?) AND ( NOT (`age` = ?));",
+				Args: []any{
+					"lb", 12,
+				},
+			},
+		},
+		{
+			name:    "where eq or eq",
+			builder: (&orm.Selector[UserModel]{}).Where(orm.C("name").Eq("lb").Or(orm.C("age").Eq(15))),
+			wantquery: &orm.Query{
+				Sql: "SELECT * FROM `UserModel` WHERE (`name` = ?) OR (`age` = ?);",
+				Args: []any{
+					"lb", 15,
+				},
+			},
+		},
+		{
+			name:    "where (eq or eq) and eq",
+			builder: (&orm.Selector[UserModel]{}).Where(orm.C("name").Eq("lb").Or(orm.C("age").Eq(15)), orm.C("sex").Eq("男")),
+			wantquery: &orm.Query{
+				Sql: "SELECT * FROM `UserModel` WHERE ((`name` = ?) OR (`age` = ?)) AND (`sex` = ?);",
+				Args: []any{
+					"lb", 15, "男",
+				},
+			},
+		},
 	}
 
 	for _, tc := range testcases {
