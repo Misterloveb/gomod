@@ -2,24 +2,29 @@ package orm
 
 import (
 	"context"
-	"reflect"
 	"strings"
+
+	"github.com/Misterloveb/gomod/orm/internel/err"
 )
 
 type Selector[T any] struct {
 	tablename string
 	where     []Predicate
+	model     *Model
 	str       strings.Builder
 	args      []any
 }
 
 func (s *Selector[T]) Build() (*Query, error) {
 	s.str.WriteString("SELECT * FROM ")
+	var err error
+	s.model, err = ParseModel(new(T))
+	if err != nil {
+		return nil, err
+	}
 	if s.tablename == "" {
-		var t T
-		typ := reflect.TypeOf(t)
 		s.str.WriteByte('`')
-		s.str.WriteString(typ.Name())
+		s.str.WriteString(s.model.TableName)
 		s.str.WriteByte('`')
 	} else {
 		s.str.WriteString(s.tablename)
@@ -71,8 +76,12 @@ func (s *Selector[T]) buildExpression(p Expression) error {
 			s.str.WriteByte(')')
 		}
 	case Column:
+		col, ok := s.model.Field[exp.name]
+		if !ok {
+			return err.ErrUnKnowColumn(exp.name)
+		}
 		s.str.WriteByte('`')
-		s.str.WriteString(exp.name)
+		s.str.WriteString(col.Column)
 		s.str.WriteByte('`')
 	case Value:
 		s.str.WriteByte('?')

@@ -10,10 +10,11 @@ import (
 )
 
 type UserModel struct {
-	Id        int64
-	FirstName string
-	age       int8
-	LastName  *sql.NullString
+	Id          int64
+	FirstName   string
+	Age         int8
+	LastName    *sql.NullString
+	GetNAMEBYId string
 }
 
 func TestSelector(t *testing.T) {
@@ -28,7 +29,7 @@ func TestSelector(t *testing.T) {
 			name:    "no from",
 			builder: &orm.Selector[UserModel]{},
 			wantquery: &orm.Query{
-				Sql: "SELECT * FROM `UserModel`;",
+				Sql: "SELECT * FROM `user_model`;",
 			},
 		},
 		{
@@ -40,9 +41,9 @@ func TestSelector(t *testing.T) {
 		},
 		{
 			name:    "where eq and not",
-			builder: (&orm.Selector[UserModel]{}).Where(orm.C("name").Eq("lb"), orm.Not(orm.C("age").Eq(12))),
+			builder: (&orm.Selector[UserModel]{}).Where(orm.C("FirstName").Eq("lb"), orm.Not(orm.C("Age").Eq(12))),
 			wantquery: &orm.Query{
-				Sql: "SELECT * FROM `UserModel` WHERE (`name` = ?) AND ( NOT (`age` = ?));",
+				Sql: "SELECT * FROM `user_model` WHERE (`first_name` = ?) AND ( NOT (`age` = ?));",
 				Args: []any{
 					"lb", 12,
 				},
@@ -50,9 +51,9 @@ func TestSelector(t *testing.T) {
 		},
 		{
 			name:    "where eq or eq",
-			builder: (&orm.Selector[UserModel]{}).Where(orm.C("name").Eq("lb").Or(orm.C("age").Eq(15))),
+			builder: (&orm.Selector[UserModel]{}).Where(orm.C("FirstName").Eq("lb").Or(orm.C("Age").Eq(15))),
 			wantquery: &orm.Query{
-				Sql: "SELECT * FROM `UserModel` WHERE (`name` = ?) OR (`age` = ?);",
+				Sql: "SELECT * FROM `user_model` WHERE (`first_name` = ?) OR (`age` = ?);",
 				Args: []any{
 					"lb", 15,
 				},
@@ -60,9 +61,9 @@ func TestSelector(t *testing.T) {
 		},
 		{
 			name:    "where (eq or eq) and eq",
-			builder: (&orm.Selector[UserModel]{}).Where(orm.C("name").Eq("lb").Or(orm.C("age").Eq(15)), orm.C("sex").Eq("男")),
+			builder: (&orm.Selector[UserModel]{}).Where(orm.C("FirstName").Eq("lb").Or(orm.C("Age").Eq(15)), orm.C("GetNAMEBYId").Eq("男")),
 			wantquery: &orm.Query{
-				Sql: "SELECT * FROM `UserModel` WHERE ((`name` = ?) OR (`age` = ?)) AND (`sex` = ?);",
+				Sql: "SELECT * FROM `user_model` WHERE ((`first_name` = ?) OR (`age` = ?)) AND (`get_namebyid` = ?);",
 				Args: []any{
 					"lb", 15, "男",
 				},
