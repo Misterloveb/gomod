@@ -114,15 +114,17 @@ func TestChangeColumnNameWithOpt(t *testing.T) {
 	testcase := []struct {
 		name     string
 		entity   any
-		modelopt orm.ModelOption
+		modelopt []orm.ModelOption
 
 		wantmodel *orm.Model
 		wanterr   error
 	}{
 		{
-			name:     "change column name",
-			entity:   &NotUserSetTable{},
-			modelopt: orm.ModelWithChangeColunName("Name", "first_name_t"),
+			name:   "change column name",
+			entity: &NotUserSetTable{},
+			modelopt: []orm.ModelOption{
+				orm.ModelWithChangeColunName("Name", "first_name_t"),
+			},
 			wantmodel: &orm.Model{
 				TableName: "not_user_set_table",
 				Field: map[string]*orm.Field{
@@ -135,14 +137,14 @@ func TestChangeColumnNameWithOpt(t *testing.T) {
 		{
 			name:     "change invoid column name",
 			entity:   &NotUserSetTable{},
-			modelopt: orm.ModelWithChangeColunName("age", "first_name_t"),
+			modelopt: []orm.ModelOption{orm.ModelWithChangeColunName("age", "first_name_t")},
 			wanterr:  err.ErrUnKnowColumn("age"),
 		},
 	}
 
 	for _, tc := range testcase {
 		t.Run(tc.name, func(t *testing.T) {
-			registry, err := orm.NewRegistry().Registry(tc.entity, tc.modelopt)
+			registry, err := orm.NewRegistry().Registry(tc.entity, tc.modelopt...)
 			assert.Equal(t, tc.wanterr, err)
 			if err != nil {
 				return
