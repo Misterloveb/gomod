@@ -7,6 +7,8 @@ import (
 
 var (
 	ErrPointerOnly = errors.New("只支持指向结构体的一级指针")
+	ErrTagNoOrm    = errors.New("结构体tag格式错误,缺少orm")
+	ErrTagNoDeng   = errors.New("结构体tag格式错误,缺少=")
 )
 
 var (

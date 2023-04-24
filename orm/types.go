@@ -21,3 +21,6 @@ type Query struct {
 	Sql  string
 	Args []any
 }
+type TableName interface {
+	SetTableName() string
+}

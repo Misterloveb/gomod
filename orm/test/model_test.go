@@ -64,10 +64,35 @@ func TestParseModel(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "use user tablename",
+			entity: &UserSetTable{},
+			want: &orm.Model{
+				TableName: "user_table",
+				Field: map[string]*orm.Field{
+					"Name": {
+						Column: "name",
+					},
+				},
+			},
+		},
+		{
+			name:   "not use user tablename",
+			entity: &NotUserSetTable{},
+			want: &orm.Model{
+				TableName: "not_user_set_table",
+				Field: map[string]*orm.Field{
+					"Name": {
+						Column: "name",
+					},
+				},
+			},
+		},
 	}
+	registry := orm.NewRegistry()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := orm.ParseModel(tt.entity)
+			got, err := registry.Registry(tt.entity)
 			assert.Equal(t, tt.wantErr, err)
 			if err != nil {
 				return
@@ -75,4 +100,65 @@ func TestParseModel(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestChangeTableNameWithOpt(t *testing.T) {
+	registry, err := orm.NewRegistry().Registry(&UserModel{}, orm.ModelWithChangeTableName("user_table_t"))
+	if err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+	assert.Equal(t, "user_table_t", registry.TableName)
+}
+func TestChangeColumnNameWithOpt(t *testing.T) {
+	testcase := []struct {
+		name     string
+		entity   any
+		modelopt orm.ModelOption
+
+		wantmodel *orm.Model
+		wanterr   error
+	}{
+		{
+			name:     "change column name",
+			entity:   &NotUserSetTable{},
+			modelopt: orm.ModelWithChangeColunName("Name", "first_name_t"),
+			wantmodel: &orm.Model{
+				TableName: "not_user_set_table",
+				Field: map[string]*orm.Field{
+					"Name": &orm.Field{
+						Column: "first_name_t",
+					},
+				},
+			},
+		},
+		{
+			name:     "change invoid column name",
+			entity:   &NotUserSetTable{},
+			modelopt: orm.ModelWithChangeColunName("age", "first_name_t"),
+			wanterr:  err.ErrUnKnowColumn("age"),
+		},
+	}
+
+	for _, tc := range testcase {
+		t.Run(tc.name, func(t *testing.T) {
+			registry, err := orm.NewRegistry().Registry(tc.entity, tc.modelopt)
+			assert.Equal(t, tc.wanterr, err)
+			if err != nil {
+				return
+			}
+			assert.Equal(t, tc.wantmodel, registry)
+		})
+	}
+}
+
+type UserSetTable struct {
+	Name string
+}
+type NotUserSetTable struct {
+	Name string
+}
+
+func (UserSetTable) SetTableName() string {
+	return "user_table"
 }

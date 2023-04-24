@@ -18,6 +18,10 @@ type UserModel struct {
 }
 
 func TestSelector(t *testing.T) {
+	db, err := orm.NewDB()
+	if err != nil {
+		t.Fatal(err)
+	}
 	testcases := []struct {
 		name    string
 		builder orm.QueryBuilder
@@ -27,21 +31,21 @@ func TestSelector(t *testing.T) {
 	}{
 		{
 			name:    "no from",
-			builder: &orm.Selector[UserModel]{},
+			builder: orm.NewSelector[UserModel](db),
 			wantquery: &orm.Query{
 				Sql: "SELECT * FROM `user_model`;",
 			},
 		},
 		{
 			name:    "from",
-			builder: (&orm.Selector[UserModel]{}).From("user_model"),
+			builder: orm.NewSelector[UserModel](db).From("user_model"),
 			wantquery: &orm.Query{
 				Sql: "SELECT * FROM user_model;",
 			},
 		},
 		{
 			name:    "where eq and not",
-			builder: (&orm.Selector[UserModel]{}).Where(orm.C("FirstName").Eq("lb"), orm.Not(orm.C("Age").Eq(12))),
+			builder: orm.NewSelector[UserModel](db).Where(orm.C("FirstName").Eq("lb"), orm.Not(orm.C("Age").Eq(12))),
 			wantquery: &orm.Query{
 				Sql: "SELECT * FROM `user_model` WHERE (`first_name` = ?) AND ( NOT (`age` = ?));",
 				Args: []any{
@@ -51,7 +55,7 @@ func TestSelector(t *testing.T) {
 		},
 		{
 			name:    "where eq or eq",
-			builder: (&orm.Selector[UserModel]{}).Where(orm.C("FirstName").Eq("lb").Or(orm.C("Age").Eq(15))),
+			builder: orm.NewSelector[UserModel](db).Where(orm.C("FirstName").Eq("lb").Or(orm.C("Age").Eq(15))),
 			wantquery: &orm.Query{
 				Sql: "SELECT * FROM `user_model` WHERE (`first_name` = ?) OR (`age` = ?);",
 				Args: []any{
@@ -61,7 +65,7 @@ func TestSelector(t *testing.T) {
 		},
 		{
 			name:    "where (eq or eq) and eq",
-			builder: (&orm.Selector[UserModel]{}).Where(orm.C("FirstName").Eq("lb").Or(orm.C("Age").Eq(15)), orm.C("GetNAMEBYId").Eq("男")),
+			builder: orm.NewSelector[UserModel](db).Where(orm.C("FirstName").Eq("lb").Or(orm.C("Age").Eq(15)), orm.C("GetNAMEBYId").Eq("男")),
 			wantquery: &orm.Query{
 				Sql: "SELECT * FROM `user_model` WHERE ((`first_name` = ?) OR (`age` = ?)) AND (`get_namebyid` = ?);",
 				Args: []any{
@@ -79,6 +83,54 @@ func TestSelector(t *testing.T) {
 				return
 			}
 			assert.Equal(t, tc.wantquery, res)
+		})
+	}
+}
+func TestTag(t *testing.T) {
+	testcase := []struct {
+		name   string
+		entity any
+		r      *orm.TestRegistry
+
+		wantmodel *orm.Model
+		wanter    error
+	}{
+		{
+			name: "tag test",
+			entity: func() any {
+				type User struct {
+					FirstName string `orm:"column=name"`
+					FirstAge  string `orm:"column=firstage"`
+					FirstSex  string ``
+				}
+				u := User{}
+				return &u
+			}(),
+			r: &orm.TestRegistry{},
+			wantmodel: &orm.Model{
+				TableName: "user",
+				Field: map[string]*orm.Field{
+					"FirstName": &orm.Field{
+						Column: "name",
+					},
+					"FirstAge": &orm.Field{
+						Column: "firstage",
+					},
+					"FirstSex": &orm.Field{
+						Column: "first_sex",
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testcase {
+		t.Run(tc.name, func(t *testing.T) {
+			md, err := tc.r.Get(tc.entity)
+			assert.Equal(t, tc.wanter, err)
+			if err != nil {
+				return
+			}
+			assert.Equal(t, tc.wantmodel, md)
 		})
 	}
 }

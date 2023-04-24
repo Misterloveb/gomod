@@ -2,23 +2,24 @@ package orm
 
 import (
 	"context"
-	"strings"
-
-	"github.com/Misterloveb/gomod/orm/internel/err"
 )
 
 type Selector[T any] struct {
+	builder
 	tablename string
 	where     []Predicate
-	model     *Model
-	str       strings.Builder
-	args      []any
+	db        *DB
 }
 
+func NewSelector[T any](db *DB) *Selector[T] {
+	return &Selector[T]{
+		db: db,
+	}
+}
 func (s *Selector[T]) Build() (*Query, error) {
 	s.str.WriteString("SELECT * FROM ")
 	var err error
-	s.model, err = ParseModel(new(T))
+	s.model, err = s.db.r.Registry(new(T))
 	if err != nil {
 		return nil, err
 	}
@@ -31,63 +32,15 @@ func (s *Selector[T]) Build() (*Query, error) {
 	}
 	if len(s.where) > 0 {
 		s.str.WriteString(" WHERE ")
-		p := s.where[0]
-		for i, wlen := 1, len(s.where); i < wlen; i++ {
-			p = p.And(s.where[i])
-		}
-		if err := s.buildExpression(p); err != nil {
+		if err := s.buildPredicate(s.where); err != nil {
 			return nil, err
 		}
 	}
-
 	s.str.WriteByte(';')
 	return &Query{
 		Sql:  s.str.String(),
 		Args: s.args,
 	}, nil
-}
-func (s *Selector[T]) buildExpression(p Expression) error {
-	if p == nil {
-		return nil
-	}
-	switch exp := p.(type) {
-	case Predicate:
-		_, ok := exp.left.(Predicate)
-		if ok {
-			s.str.WriteByte('(')
-		}
-		if err := s.buildExpression(exp.left); err != nil {
-			return err
-		}
-		if ok {
-			s.str.WriteByte(')')
-		}
-		s.str.WriteByte(' ')
-		s.str.WriteString(exp.op.ToString())
-		s.str.WriteByte(' ')
-		_, ok = exp.right.(Predicate)
-		if ok {
-			s.str.WriteByte('(')
-		}
-		if err := s.buildExpression(exp.right); err != nil {
-			return err
-		}
-		if ok {
-			s.str.WriteByte(')')
-		}
-	case Column:
-		col, ok := s.model.Field[exp.name]
-		if !ok {
-			return err.ErrUnKnowColumn(exp.name)
-		}
-		s.str.WriteByte('`')
-		s.str.WriteString(col.Column)
-		s.str.WriteByte('`')
-	case Value:
-		s.str.WriteByte('?')
-		s.args = append(s.args, exp.Arg)
-	}
-	return nil
 }
 func (s *Selector[T]) From(name string) *Selector[T] {
 	s.tablename = name
