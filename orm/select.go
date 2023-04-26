@@ -2,7 +2,6 @@ package orm
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/Misterloveb/gomod/orm/internel/err"
 )
@@ -62,40 +61,11 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 	if errs != nil {
 		return nil, errs
 	}
-	columns, errs := rows.Columns()
-	if errs != nil {
-		return nil, errs
-	}
-	cnum := len(columns)
-	vals := make([]any, 0, cnum)
-	colselem := make([]reflect.Value, 0, cnum)
-	for _, col := range columns {
-		cn, ok := s.model.ColumnMap[col]
-		if !ok {
-			return nil, err.ErrUnKnowColumn(col)
-		}
-		newtyp := reflect.New(cn.Ctype)
-		val := newtyp.Interface()
-		vals = append(vals, val)
-		colselem = append(colselem, newtyp.Elem())
-	}
 	if !rows.Next() {
 		return nil, err.ErrNoRows
 	}
-	if err := rows.Scan(vals...); err != nil {
-		return nil, err
-	}
 	ptr_T := new(T)
-	ptr_T_value := reflect.ValueOf(ptr_T).Elem()
-	for k, fdname := range columns {
-		cn, ok := s.model.ColumnMap[fdname]
-		if !ok {
-			return nil, err.ErrUnKnowColumn(fdname)
-		}
-		if ptr_T_value.FieldByName(cn.Goname).CanSet() {
-			ptr_T_value.FieldByName(cn.Goname).Set(colselem[k])
-		}
-	}
+	s.db.valuer(ptr_T, s.model).SetColumnVal(rows)
 	return ptr_T, nil
 }
 

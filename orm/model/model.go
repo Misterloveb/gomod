@@ -1,4 +1,4 @@
-package orm
+package model
 
 import (
 	"reflect"
@@ -14,6 +14,9 @@ const (
 	tagName = "column" //tag自定义列名,column=XXX
 )
 
+type TableName interface {
+	SetTableName() string
+}
 type Registry interface {
 	Get(val any) (*Model, error)
 	Registry(val any, opt ...ModelOption) (*Model, error)
@@ -29,18 +32,19 @@ type Field struct {
 	Column string       //列名
 	Ctype  reflect.Type //列的类型
 	Goname string       //结构体字段名
+	Offset uintptr      //偏移量
 }
-type registry struct {
+type REgistry struct {
 	model sync.Map
 }
 type TestRegistry struct {
-	registry
+	REgistry
 }
 
-func NewRegistry() *registry {
-	return &registry{}
+func NewRegistry() *REgistry {
+	return &REgistry{}
 }
-func (r *registry) Get(entity any) (*Model, error) {
+func (r *REgistry) Get(entity any) (*Model, error) {
 	typ := reflect.TypeOf(entity)
 	m, ok := r.model.Load(typ)
 	if !ok {
@@ -54,7 +58,7 @@ func (r *registry) Get(entity any) (*Model, error) {
 }
 
 // 最多支持一级指针
-func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
+func (r *REgistry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	typ := reflect.TypeOf(entity)
 	if typ.Kind() != reflect.Ptr || typ.Elem().Kind() != reflect.Struct {
 		return nil, err.ErrPointerOnly
@@ -73,6 +77,7 @@ func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 		fds := &Field{
 			Ctype:  fd.Type,
 			Goname: fd.Name,
+			Offset: fd.Offset,
 		}
 		if ok {
 			fds.Column = coluser
@@ -101,7 +106,7 @@ func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	r.model.Store(typ, res)
 	return res, nil
 }
-func (r *registry) parseTag(tag reflect.StructTag) (map[string]string, error) {
+func (r *REgistry) parseTag(tag reflect.StructTag) (map[string]string, error) {
 	if len(tag) == 0 {
 		return map[string]string{}, nil
 	}

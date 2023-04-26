@@ -10,6 +10,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Misterloveb/gomod/orm"
 	"github.com/Misterloveb/gomod/orm/internel/err"
+	"github.com/Misterloveb/gomod/orm/model"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,6 @@ type UserModel struct {
 	Age         int8
 	LastName    *sql.NullString
 	GetNAMEBYId string
-	private     string
 }
 
 func TestSelector(t *testing.T) {
@@ -96,9 +96,9 @@ func TestTag(t *testing.T) {
 	testcase := []struct {
 		name   string
 		entity any
-		r      *orm.TestRegistry
+		r      *model.TestRegistry
 
-		wantmodel *orm.Model
+		wantmodel *model.Model
 		wanter    error
 	}{
 		{
@@ -112,41 +112,45 @@ func TestTag(t *testing.T) {
 				u := User{}
 				return &u
 			}(),
-			r: &orm.TestRegistry{},
-			wantmodel: &orm.Model{
+			r: &model.TestRegistry{},
+			wantmodel: &model.Model{
 				TableName: "user",
-				FieldMap: map[string]*orm.Field{
-					"FirstName": &orm.Field{
+				FieldMap: map[string]*model.Field{
+					"FirstName": &model.Field{
 						Column: "name",
 						Goname: "FirstName",
 						Ctype:  reflect.TypeOf(""),
 					},
-					"FirstAge": &orm.Field{
+					"FirstAge": &model.Field{
 						Column: "firstage",
 						Goname: "FirstAge",
 						Ctype:  reflect.TypeOf(""),
+						Offset: 16,
 					},
-					"FirstSex": &orm.Field{
+					"FirstSex": &model.Field{
 						Column: "first_sex",
 						Goname: "FirstSex",
 						Ctype:  reflect.TypeOf(""),
+						Offset: 32,
 					},
 				},
-				ColumnMap: map[string]*orm.Field{
-					"name": &orm.Field{
+				ColumnMap: map[string]*model.Field{
+					"name": &model.Field{
 						Column: "name",
 						Goname: "FirstName",
 						Ctype:  reflect.TypeOf(""),
 					},
-					"firstage": &orm.Field{
+					"firstage": &model.Field{
 						Column: "firstage",
 						Goname: "FirstAge",
 						Ctype:  reflect.TypeOf(""),
+						Offset: 16,
 					},
-					"first_sex": &orm.Field{
+					"first_sex": &model.Field{
 						Column: "first_sex",
 						Goname: "FirstSex",
 						Ctype:  reflect.TypeOf(""),
+						Offset: 32,
 					},
 				},
 			},
@@ -176,8 +180,8 @@ func TestSelector_Get(t *testing.T) {
 	mock_rows := mock.NewRows([]string{"id", "first_name", "age"})
 	mock.ExpectQuery("SELECT .*").WillReturnRows(mock_rows)
 	//have row
-	mock_rows = mock.NewRows([]string{"id", "first_name", "age", "last_name", "get_namebyid", "private"}).
-		AddRow("1", "liubin", "18", "lb", "123", "priv")
+	mock_rows = mock.NewRows([]string{"id", "first_name", "age", "last_name", "get_namebyid"}).
+		AddRow("1", "liubin", "18", "lb", "123")
 	mock.ExpectQuery("SELECT .*").WillReturnRows(mock_rows)
 	testcase := []struct {
 		name     string
@@ -197,12 +201,12 @@ func TestSelector_Get(t *testing.T) {
 			wanterr:  errors.New("query error"),
 		},
 		{
-			name:     "query now rows",
-			selector: (orm.NewSelector[UserModel](db).Where(orm.C("Id").Eq(2))),
+			name:     "query no rows",
+			selector: (orm.NewSelector[UserModel](db).Where(orm.C("Id").Eq(22))),
 			wanterr:  err.ErrNoRows,
 		},
 		{
-			name:     "query now",
+			name:     "query rows",
 			selector: (orm.NewSelector[UserModel](db).Where(orm.C("Id").Eq(2))),
 			wantres: &UserModel{
 				Id:          1,
@@ -210,7 +214,6 @@ func TestSelector_Get(t *testing.T) {
 				LastName:    &sql.NullString{Valid: true, String: "lb"},
 				Age:         18,
 				GetNAMEBYId: "123",
-				private:     "",
 			},
 		},
 	}

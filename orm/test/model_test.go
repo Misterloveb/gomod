@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Misterloveb/gomod/orm"
 	"github.com/Misterloveb/gomod/orm/internel/err"
+	"github.com/Misterloveb/gomod/orm/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,22 +13,22 @@ func TestParseModel(t *testing.T) {
 	tests := []struct {
 		name    string
 		entity  any
-		want    *orm.Model
+		want    *model.Model
 		wantErr error
 	}{
 		{
 			name:   "parsemodel error",
 			entity: UserSetTable{},
-			want: &orm.Model{
+			want: &model.Model{
 				TableName: "user_table",
-				FieldMap: map[string]*orm.Field{
+				FieldMap: map[string]*model.Field{
 					"Name": {
 						Column: "name",
 						Goname: "Name",
 						Ctype:  reflect.TypeOf(""),
 					},
 				},
-				ColumnMap: map[string]*orm.Field{
+				ColumnMap: map[string]*model.Field{
 					"name": {
 						Column: "name",
 						Goname: "Name",
@@ -41,16 +41,16 @@ func TestParseModel(t *testing.T) {
 		{
 			name:   "parsemodel",
 			entity: &UserSetTable{},
-			want: &orm.Model{
+			want: &model.Model{
 				TableName: "user_table",
-				FieldMap: map[string]*orm.Field{
+				FieldMap: map[string]*model.Field{
 					"Name": {
 						Column: "name",
 						Goname: "Name",
 						Ctype:  reflect.TypeOf(""),
 					},
 				},
-				ColumnMap: map[string]*orm.Field{
+				ColumnMap: map[string]*model.Field{
 					"name": {
 						Column: "name",
 						Goname: "Name",
@@ -62,16 +62,16 @@ func TestParseModel(t *testing.T) {
 		{
 			name:   "use user tablename",
 			entity: &UserSetTable{},
-			want: &orm.Model{
+			want: &model.Model{
 				TableName: "user_table",
-				FieldMap: map[string]*orm.Field{
+				FieldMap: map[string]*model.Field{
 					"Name": {
 						Column: "name",
 						Goname: "Name",
 						Ctype:  reflect.TypeOf(""),
 					},
 				},
-				ColumnMap: map[string]*orm.Field{
+				ColumnMap: map[string]*model.Field{
 					"name": {
 						Column: "name",
 						Goname: "Name",
@@ -83,16 +83,16 @@ func TestParseModel(t *testing.T) {
 		{
 			name:   "not use user tablename",
 			entity: &NotUserSetTable{},
-			want: &orm.Model{
+			want: &model.Model{
 				TableName: "not_user_set_table",
-				FieldMap: map[string]*orm.Field{
+				FieldMap: map[string]*model.Field{
 					"Name": {
 						Column: "name",
 						Goname: "Name",
 						Ctype:  reflect.TypeOf(""),
 					},
 				},
-				ColumnMap: map[string]*orm.Field{
+				ColumnMap: map[string]*model.Field{
 					"name": {
 						Column: "name",
 						Goname: "Name",
@@ -102,7 +102,7 @@ func TestParseModel(t *testing.T) {
 			},
 		},
 	}
-	registry := orm.NewRegistry()
+	registry := model.NewRegistry()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := registry.Registry(tt.entity)
@@ -116,7 +116,7 @@ func TestParseModel(t *testing.T) {
 }
 
 func TestChangeTableNameWithOpt(t *testing.T) {
-	registry, err := orm.NewRegistry().Registry(&UserModel{}, orm.ModelWithChangeTableName("user_table_t"))
+	registry, err := model.NewRegistry().Registry(&UserModel{}, model.ModelWithChangeTableName("user_table_t"))
 	if err != nil {
 		t.Log(err)
 		t.Fail()
@@ -127,28 +127,28 @@ func TestChangeColumnNameWithOpt(t *testing.T) {
 	testcase := []struct {
 		name     string
 		entity   any
-		modelopt []orm.ModelOption
+		modelopt []model.ModelOption
 
-		wantmodel *orm.Model
+		wantmodel *model.Model
 		wanterr   error
 	}{
 		{
 			name:   "change column name",
 			entity: &NotUserSetTable{},
-			modelopt: []orm.ModelOption{
-				orm.ModelWithChangeColunName("Name", "first_name_t"),
+			modelopt: []model.ModelOption{
+				model.ModelWithChangeColunName("Name", "first_name_t"),
 			},
-			wantmodel: &orm.Model{
+			wantmodel: &model.Model{
 				TableName: "not_user_set_table",
-				FieldMap: map[string]*orm.Field{
-					"Name": &orm.Field{
+				FieldMap: map[string]*model.Field{
+					"Name": &model.Field{
 						Column: "first_name_t",
 						Goname: "Name",
 						Ctype:  reflect.TypeOf(""),
 					},
 				},
-				ColumnMap: map[string]*orm.Field{
-					"first_name_t": &orm.Field{
+				ColumnMap: map[string]*model.Field{
+					"first_name_t": &model.Field{
 						Column: "first_name_t",
 						Goname: "Name",
 						Ctype:  reflect.TypeOf(""),
@@ -159,14 +159,14 @@ func TestChangeColumnNameWithOpt(t *testing.T) {
 		{
 			name:     "change invoid column name",
 			entity:   &NotUserSetTable{},
-			modelopt: []orm.ModelOption{orm.ModelWithChangeColunName("age", "first_name_t")},
+			modelopt: []model.ModelOption{model.ModelWithChangeColunName("age", "first_name_t")},
 			wanterr:  err.ErrUnKnowColumn("age"),
 		},
 	}
 
 	for _, tc := range testcase {
 		t.Run(tc.name, func(t *testing.T) {
-			registry, err := orm.NewRegistry().Registry(tc.entity, tc.modelopt...)
+			registry, err := model.NewRegistry().Registry(tc.entity, tc.modelopt...)
 			assert.Equal(t, tc.wanterr, err)
 			if err != nil {
 				return

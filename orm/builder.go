@@ -4,10 +4,11 @@ import (
 	"strings"
 
 	"github.com/Misterloveb/gomod/orm/internel/err"
+	"github.com/Misterloveb/gomod/orm/model"
 )
 
 type builder struct {
-	model *Model
+	model *model.Model
 	where []Predicate
 	args  []any
 	str   strings.Builder

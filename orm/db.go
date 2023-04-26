@@ -1,10 +1,16 @@
 package orm
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/Misterloveb/gomod/orm/internel/valuer"
+	"github.com/Misterloveb/gomod/orm/model"
+)
 
 type DB struct {
-	r  *registry
-	db *sql.DB
+	r      *model.REgistry
+	db     *sql.DB
+	valuer valuer.Creator
 }
 type dbOption func(*DB)
 
@@ -17,8 +23,9 @@ func Open(driver, dsn string, opt ...dbOption) (*DB, error) {
 }
 func OpenDB(sqldb *sql.DB, opt ...dbOption) (*DB, error) {
 	res := &DB{
-		r:  NewRegistry(),
-		db: sqldb,
+		r:      model.NewRegistry(),
+		db:     sqldb,
+		valuer: valuer.NewUnsafeValuer(),
 	}
 	for _, fn := range opt {
 		fn(res)
