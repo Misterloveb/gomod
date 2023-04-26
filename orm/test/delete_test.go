@@ -4,14 +4,19 @@ import (
 	"testing"
 
 	"github.com/Misterloveb/gomod/orm"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+func memoryDB(t *testing.T) *orm.DB {
+	db, err := orm.Open("sqlite3", "file:test.db?cache=share&mode=memory")
+	require.NoError(t, err)
+	return db
+}
 func TestDeleteor(t *testing.T) {
-	db, err := orm.NewDB()
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := memoryDB(t)
+
 	testcase := []struct {
 		name         string
 		querybuilder orm.QueryBuilder

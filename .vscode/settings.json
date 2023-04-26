@@ -1,4 +1,5 @@
 {
     "commentTranslate.source": "Google",
-    "commentTranslate.targetLanguage": "zh-CN"
+    "commentTranslate.multiLineMerge": false,
+    // "commentTranslate.targetLanguage": "zh-CN"
 }

@@ -2,6 +2,9 @@ package orm
 
 import (
 	"context"
+	"reflect"
+
+	"github.com/Misterloveb/gomod/orm/internel/err"
 )
 
 type Selector[T any] struct {
@@ -50,10 +53,62 @@ func (s *Selector[T]) Where(pd ...Predicate) *Selector[T] {
 	s.where = pd
 	return s
 }
-func (s *Selector[T]) Get(ctx context.Context) (T, error) {
-	panic("not implemented") // TODO: Implement
+func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
+	sqlobj, errs := s.Build()
+	if errs != nil {
+		return nil, errs
+	}
+	rows, errs := s.db.db.QueryContext(ctx, sqlobj.Sql, sqlobj.Args...)
+	if errs != nil {
+		return nil, errs
+	}
+	columns, errs := rows.Columns()
+	if errs != nil {
+		return nil, errs
+	}
+	cnum := len(columns)
+	vals := make([]any, 0, cnum)
+	colselem := make([]reflect.Value, 0, cnum)
+	for _, col := range columns {
+		cn, ok := s.model.ColumnMap[col]
+		if !ok {
+			return nil, err.ErrUnKnowColumn(col)
+		}
+		newtyp := reflect.New(cn.Ctype)
+		val := newtyp.Interface()
+		vals = append(vals, val)
+		colselem = append(colselem, newtyp.Elem())
+	}
+	if !rows.Next() {
+		return nil, err.ErrNoRows
+	}
+	if err := rows.Scan(vals...); err != nil {
+		return nil, err
+	}
+	ptr_T := new(T)
+	ptr_T_value := reflect.ValueOf(ptr_T).Elem()
+	for k, fdname := range columns {
+		cn, ok := s.model.ColumnMap[fdname]
+		if !ok {
+			return nil, err.ErrUnKnowColumn(fdname)
+		}
+		if ptr_T_value.FieldByName(cn.Goname).CanSet() {
+			ptr_T_value.FieldByName(cn.Goname).Set(colselem[k])
+		}
+	}
+	return ptr_T, nil
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {
-	panic("not implemented") // TODO: Implement
+	// havedataornot := false
+	// for rows.Next() {
+	// 	havedataornot = true
+	// 	if err := rows.Scan(vals...); err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// if !havedataornot {
+	// 	return nil, err.ErrNoRows
+	// }
+	return nil, nil
 }

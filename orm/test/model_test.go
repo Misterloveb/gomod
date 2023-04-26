@@ -1,6 +1,7 @@
 package test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/Misterloveb/gomod/orm"
@@ -16,25 +17,22 @@ func TestParseModel(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:   "parsemodel",
-			entity: UserModel{},
+			name:   "parsemodel error",
+			entity: UserSetTable{},
 			want: &orm.Model{
-				TableName: "user_model",
-				Field: map[string]*orm.Field{
-					"Id": {
-						Column: "id",
+				TableName: "user_table",
+				FieldMap: map[string]*orm.Field{
+					"Name": {
+						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
-					"FirstName": {
-						Column: "first_name",
-					},
-					"Age": {
-						Column: "age",
-					},
-					"LastName": {
-						Column: "last_name",
-					},
-					"GetNAMEBYId": {
-						Column: "get_namebyid",
+				},
+				ColumnMap: map[string]*orm.Field{
+					"name": {
+						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
 				},
 			},
@@ -42,24 +40,21 @@ func TestParseModel(t *testing.T) {
 		},
 		{
 			name:   "parsemodel",
-			entity: &UserModel{},
+			entity: &UserSetTable{},
 			want: &orm.Model{
-				TableName: "user_model",
-				Field: map[string]*orm.Field{
-					"Id": {
-						Column: "id",
+				TableName: "user_table",
+				FieldMap: map[string]*orm.Field{
+					"Name": {
+						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
-					"FirstName": {
-						Column: "first_name",
-					},
-					"Age": {
-						Column: "age",
-					},
-					"LastName": {
-						Column: "last_name",
-					},
-					"GetNAMEBYId": {
-						Column: "get_namebyid",
+				},
+				ColumnMap: map[string]*orm.Field{
+					"name": {
+						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
 				},
 			},
@@ -69,9 +64,18 @@ func TestParseModel(t *testing.T) {
 			entity: &UserSetTable{},
 			want: &orm.Model{
 				TableName: "user_table",
-				Field: map[string]*orm.Field{
+				FieldMap: map[string]*orm.Field{
 					"Name": {
 						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
+					},
+				},
+				ColumnMap: map[string]*orm.Field{
+					"name": {
+						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
 				},
 			},
@@ -81,9 +85,18 @@ func TestParseModel(t *testing.T) {
 			entity: &NotUserSetTable{},
 			want: &orm.Model{
 				TableName: "not_user_set_table",
-				Field: map[string]*orm.Field{
+				FieldMap: map[string]*orm.Field{
 					"Name": {
 						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
+					},
+				},
+				ColumnMap: map[string]*orm.Field{
+					"name": {
+						Column: "name",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
 				},
 			},
@@ -127,9 +140,18 @@ func TestChangeColumnNameWithOpt(t *testing.T) {
 			},
 			wantmodel: &orm.Model{
 				TableName: "not_user_set_table",
-				Field: map[string]*orm.Field{
+				FieldMap: map[string]*orm.Field{
 					"Name": &orm.Field{
 						Column: "first_name_t",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
+					},
+				},
+				ColumnMap: map[string]*orm.Field{
+					"first_name_t": &orm.Field{
+						Column: "first_name_t",
+						Goname: "Name",
+						Ctype:  reflect.TypeOf(""),
 					},
 				},
 			},

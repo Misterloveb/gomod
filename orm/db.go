@@ -1,13 +1,24 @@
 package orm
 
+import "database/sql"
+
 type DB struct {
-	r *registry
+	r  *registry
+	db *sql.DB
 }
 type dbOption func(*DB)
 
-func NewDB(opt ...dbOption) (*DB, error) {
+func Open(driver, dsn string, opt ...dbOption) (*DB, error) {
+	dbres, err := sql.Open(driver, dsn)
+	if err != nil {
+		return nil, err
+	}
+	return OpenDB(dbres, opt...)
+}
+func OpenDB(sqldb *sql.DB, opt ...dbOption) (*DB, error) {
 	res := &DB{
-		r: NewRegistry(),
+		r:  NewRegistry(),
+		db: sqldb,
 	}
 	for _, fn := range opt {
 		fn(res)

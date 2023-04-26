@@ -43,7 +43,7 @@ func (b *builder) buildExpression(p Expression) error {
 			b.str.WriteByte(')')
 		}
 	case Column:
-		col, ok := b.model.Field[exp.name]
+		col, ok := b.model.FieldMap[exp.name]
 		if !ok {
 			return err.ErrUnKnowColumn(exp.name)
 		}

@@ -21,11 +21,14 @@ type Registry interface {
 type ModelOption func(*Model) error
 type Model struct {
 	TableName string            //表名
-	Field     map[string]*Field //表字段
+	FieldMap  map[string]*Field //结构体字段名映射
+	ColumnMap map[string]*Field //表列名映射
 }
 
 type Field struct {
-	Column string //列名
+	Column string       //列名
+	Ctype  reflect.Type //列的类型
+	Goname string       //结构体字段名
 }
 type registry struct {
 	model sync.Map
@@ -50,7 +53,7 @@ func (r *registry) Get(entity any) (*Model, error) {
 	return m.(*Model), nil
 }
 
-//最多支持一级指针
+// 最多支持一级指针
 func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	typ := reflect.TypeOf(entity)
 	if typ.Kind() != reflect.Ptr || typ.Elem().Kind() != reflect.Struct {
@@ -59,6 +62,7 @@ func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	typelem := typ.Elem()
 	numFiled := typelem.NumField()
 	filemap := make(map[string]*Field, numFiled)
+	columnmap := make(map[string]*Field, numFiled)
 	for i := 0; i < numFiled; i++ {
 		fd := typelem.Field(i)
 		usercol, err := r.parseTag(fd.Tag)
@@ -66,16 +70,17 @@ func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 			return nil, err
 		}
 		coluser, ok := usercol[tagName]
-		if ok {
-			filemap[fd.Name] = &Field{
-				Column: coluser,
-			}
-		} else {
-			filemap[fd.Name] = &Field{
-				Column: UnderSourceName(fd.Name),
-			}
+		fds := &Field{
+			Ctype:  fd.Type,
+			Goname: fd.Name,
 		}
-
+		if ok {
+			fds.Column = coluser
+		} else {
+			fds.Column = UnderSourceName(fd.Name)
+		}
+		filemap[fd.Name] = fds
+		columnmap[fds.Column] = fds
 	}
 	var tabname string
 	if tabobj, ok := entity.(TableName); ok {
@@ -85,7 +90,8 @@ func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	}
 	res := &Model{
 		TableName: tabname,
-		Field:     filemap,
+		FieldMap:  filemap,
+		ColumnMap: columnmap,
 	}
 	for _, fn := range opt {
 		if re := fn(res); re != nil {
@@ -115,7 +121,7 @@ func (r *registry) parseTag(tag reflect.StructTag) (map[string]string, error) {
 	return rsmap, nil
 }
 
-//自定义表名
+// 自定义表名
 func ModelWithChangeTableName(name string) ModelOption {
 	return func(m *Model) error {
 		m.TableName = name
@@ -123,19 +129,21 @@ func ModelWithChangeTableName(name string) ModelOption {
 	}
 }
 
-//自定义列名
+// 自定义列名
 func ModelWithChangeColunName(col string, newname string) ModelOption {
 	return func(m *Model) error {
-		res, ok := m.Field[col]
+		res, ok := m.FieldMap[col]
 		if !ok {
 			return err.ErrUnKnowColumn(col)
 		}
+		delete(m.ColumnMap, res.Column)
 		res.Column = newname
+		m.ColumnMap[newname] = res
 		return nil
 	}
 }
 
-//大写字母转下划线
+// 大写字母转下划线
 func UnderSourceName(str string) string {
 	var restr strings.Builder
 	if utf8.RuneCountInString(str) <= 2 {
