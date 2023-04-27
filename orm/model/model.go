@@ -34,17 +34,17 @@ type Field struct {
 	Goname string       //结构体字段名
 	Offset uintptr      //偏移量
 }
-type REgistry struct {
+type registry struct {
 	model sync.Map
 }
 type TestRegistry struct {
-	REgistry
+	registry
 }
 
-func NewRegistry() *REgistry {
-	return &REgistry{}
+func NewRegistry() *registry {
+	return &registry{}
 }
-func (r *REgistry) Get(entity any) (*Model, error) {
+func (r *registry) Get(entity any) (*Model, error) {
 	typ := reflect.TypeOf(entity)
 	m, ok := r.model.Load(typ)
 	if !ok {
@@ -58,7 +58,7 @@ func (r *REgistry) Get(entity any) (*Model, error) {
 }
 
 // 最多支持一级指针
-func (r *REgistry) Registry(entity any, opt ...ModelOption) (*Model, error) {
+func (r *registry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	typ := reflect.TypeOf(entity)
 	if typ.Kind() != reflect.Ptr || typ.Elem().Kind() != reflect.Struct {
 		return nil, err.ErrPointerOnly
@@ -106,7 +106,7 @@ func (r *REgistry) Registry(entity any, opt ...ModelOption) (*Model, error) {
 	r.model.Store(typ, res)
 	return res, nil
 }
-func (r *REgistry) parseTag(tag reflect.StructTag) (map[string]string, error) {
+func (r *registry) parseTag(tag reflect.StructTag) (map[string]string, error) {
 	if len(tag) == 0 {
 		return map[string]string{}, nil
 	}

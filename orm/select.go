@@ -70,15 +70,22 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {
-	// havedataornot := false
-	// for rows.Next() {
-	// 	havedataornot = true
-	// 	if err := rows.Scan(vals...); err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-	// if !havedataornot {
-	// 	return nil, err.ErrNoRows
-	// }
-	return nil, nil
+	sqlobj, errs := s.Build()
+	if errs != nil {
+		return nil, errs
+	}
+	rows, errs := s.db.db.QueryContext(ctx, sqlobj.Sql, sqlobj.Args...)
+	if errs != nil {
+		return nil, errs
+	}
+	slice_T := make([]*T, 0, 10)
+	for rows.Next() {
+		p := new(T)
+		s.db.valuer(p, s.model).SetColumnVal(rows)
+		slice_T = append(slice_T, p)
+	}
+	if len(slice_T) == 0 {
+		return nil, err.ErrNoRows
+	}
+	return slice_T, nil
 }
